@@ -9,19 +9,18 @@ db = SQLAlchemy()
 class Usuario(db.Model):
     __tablename__ = 'usuario'
 
-    id= db.Column(db.Integer, primary_key=True)
-
+    id= db.Column(db.Integer, primary_key=True,nullable=False)
     nombre = db.Column(db.String(50), nullable=False) 
     apellido = db.Column(db.String(50), nullable=False) 
     correo = db.Column(db.String(50), nullable=False) 
-    contrasenna = db.Column(db.String(50), nullable=False) 
+    contraseña = db.Column(db.String(50), nullable=False) 
     pais = db.Column(db.Integer, foreing_key = True, nullable=False)
     fecha_registro =  db.Column(db.DateTime(), nullable=False, default=db.func.current_timestamp())
 
 
     @classmethod
-    def create(cls,id,nombre,apellido,correo,contrasenna,pais,fecha_registro):
-        usuario = Usuario(id=id,nombre=nombre,apellido=apellido, correo=correo, contrasenna=contrasenna,pais=pais,fecha_registro=fecha_registro)
+    def create(cls,id,nombre,apellido,correo,contraseña,pais,fecha_registro):
+        usuario = Usuario(id=id,nombre=nombre,apellido=apellido, correo=correo, contraseña=contraseña,pais=pais,fecha_registro=fecha_registro)
         return usuario.save()
     
     def save(self):
@@ -38,7 +37,7 @@ class Usuario(db.Model):
             'nombre': self.nombre,
             'apellido': self.apellido,
             'correo': self.correo,
-            'contrasenna': self.contrasenna,
+            'contraseña': self.contraseña,
             'pais': self.pais,
             'fecha_registro': self.fecha_registro
         }       
@@ -131,8 +130,8 @@ class Cuenta_Bancaria(db.Model):
 
 class Usuario_Tiene_Moneda(db.Model):
     __tablename__='usuario_tiene_moneda'
-    id_moneda = db.Column(db.Integer, primary_key=True)
-    id_usuario = db.Column(db.Integer, foreing_key=True)
+    id_moneda = db.Column(db.Integer, foreing_key=True)
+    id_usuario = db.Column(db.Integer, primary_key=True)
     balance = db.Column(db.Float, nullable=False)
 
     @classmethod
