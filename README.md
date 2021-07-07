@@ -1,7 +1,8 @@
 # ProyectoBD
 Nuestro proyecto de Base de Datos 2021.
 
-### Supuestos.
+### Supuestos
+...
 
 ### Integrantes
 Pepinos Devs son:
