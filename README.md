@@ -1,9 +1,9 @@
 # ProyectoBD
 Nuestro proyecto de Base de Datos 2021.
 
-## Supuestos.
+### Supuestos.
 
-## Integrantes
+### Integrantes
 Pepinos Devs son:
 >Jose Escobar Gonzalez  
 >Christopher Guibout Strelow  
