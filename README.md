@@ -5,6 +5,7 @@ Nuestro proyecto de Base de Datos 2021.
 ...
 
 ### Integrantes
+Grupo 7 - Pepinos Devs.  
 Pepinos Devs son:
 >Jose Escobar Gonzalez  
 >Christopher Guibout Strelow  
