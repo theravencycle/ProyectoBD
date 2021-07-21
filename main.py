@@ -3,6 +3,7 @@ from flask import jsonify
 from config import config
 from models import Pais, Usuario,Cuenta_Bancaria, Usuario_Tiene_Moneda , Moneda, Precio_Moneda ,db 
 from flask import request
+from sqlalchemy import extract, func
 
 
 def create_app(enviroment):
@@ -29,12 +30,13 @@ def get_usuario(id):
 		return jsonify({'message': 'El usuario no existe'}), 404
 	return jsonify({'user': usuario.json() })
 
+'''Al formar el Usuario.create aca es donde sale el error '''
 @app.route('/api/v1/usuario/', methods=['POST'])
 def create_usuario():
 	json = request.get_json(force=True)
-	if json.get('usuario') is None:
+	if json.get('nombre') is None:
 		return jsonify({'message': 'El formato está mal'}), 400
-	user = Usuario.create(json['usuario']['nombre'],json['usuario']['apellido'],json['usuario']['correo'],json['usuario']['contraseña'],json['usuario']['pais'])
+	user = Usuario.create(json['id'],json['nombre'],json['apellido'],json['correo'],json['contraseña'],json['pais'],json['fecha_registro'])
 	return jsonify({'usuario': user.json() })
 
 @app.route('/api/v1/usuario/<id>', methods=['PUT'])
@@ -78,9 +80,9 @@ def get_pais(cod_pais):
 @app.route('/api/v1/pais/', methods=['POST'])
 def create_pais():
 	json = request.get_json(force=True)
-	if json.get('pais') is None:
+	if json.get('nombre') is None:
 		return jsonify({'message': 'El formato está mal'}), 400
-	pais = Pais.create(json['nombre'],json['cod_pais'])
+	pais = Pais.create(json['nombre'])
 	return jsonify({'pais': pais.json() })
 
 @app.route('/api/v1/pais/<cod_pais>', methods=['PUT'])
@@ -122,7 +124,7 @@ def get_cuenta_bancaria(numero_cuenta):
 @app.route('/api/v1/cuenta_bancaria/', methods=['POST'])
 def create_cuenta_bancaria():
 	json = request.get_json(force=True)
-	if json.get('cuenta_bancaria') is None:
+	if json.get('cuenta_bancaria') is None or json.get('id_usuario') is None or json.get('cuenta_bancaria') is None:
 		return jsonify({'message': 'El formato está mal'}), 400
 	cuenta_bancarria = Cuenta_Bancaria.create(json['numero_cuenta'],json['id_usuario'],json['balance'])
 	return jsonify({'cuenta_bancaria': cuenta_bancarria.json() })
@@ -166,7 +168,7 @@ def get_usuario_tiene_moneda(id_usuario):
 @app.route('/api/v1/usuario_tiene_moneda/', methods=['POST'])
 def create_usuario_tiene_moneda():
 	json = request.get_json(force=True)
-	if json.get('usuario_tiene_moneda') is None:
+	if json.get('id_moneda') is None or json.get('id_usuario') is None or json.get('balance') is None:
 		return jsonify({'message': 'El formato está mal'}), 400
 	usuario_tiene_moneda = Usuario_Tiene_Moneda.create(json['id_moneda'],json['id_usuario'],json['balance'])
 	return jsonify({'usuario_tiene_moneda': usuario_tiene_moneda.json() })
@@ -210,7 +212,7 @@ def get_moneda(id):
 @app.route('/api/v1/moneda/', methods=['POST'])
 def create_moneda():
 	json = request.get_json(force=True)
-	if json.get('moneda') is None:
+	if json.get('nombre') is None or json.get('sigla') is None:
 		return jsonify({'message': 'El formato está mal'}), 400
 	moneda = Moneda.create(json['id'],json['nombre'],json['sigla'])
 	return jsonify({'moneda': moneda.json() })
@@ -254,7 +256,7 @@ def get_precio_moneda(id_moneda):
 @app.route('/api/v1/precio_moneda/', methods=['POST'])
 def create_precio_moneda():
 	json = request.get_json(force=True)
-	if json.get('precio_moneda') is None:
+	if json.get('fecha') is None or json.get('valor') is None or json.get('id_moneda') is None:
 		return jsonify({'message': 'El formato está mal'}), 400
 
 	precio_moneda = Precio_Moneda.create(json['fecha'],json['valor'],json['id_moneda'])
@@ -282,8 +284,33 @@ def delete_precio_moneda(id_moneda):
 	precio_moneda.delete()
 	return jsonify({'precio_moneda': precio_moneda.json() })
 
+######################## Consultas ########################
 
+@app.route('/api/v1/consultas/1/<anno>', methods=['GET'])
+def consulta1(anno):
+	usuarios_registro = [ (usuario.nombre,usuario.apellido,usuario.fecha_registro) for usuario in db.session.query(Usuario).filter(extract('year', Usuario.fecha_registro) == anno).all()]
+	return jsonify({'Usuarios registrados durante el año dado': usuarios_registro })
 
+@app.route('/api/v1/consultas/2/<valor>', methods=['GET'])
+def consulta2(valor):
+	cuentas_bancarias = [ (cuenta_bancaria.numero_cuenta,cuenta_bancaria.balance) for cuenta_bancaria in db.session.query(Cuenta_Bancaria).filter(Cuenta_Bancaria.balance > valor).order_by(Cuenta_Bancaria.balance.asc()).all()]
+	return jsonify({'Cuentas bancarias con balance superior al dado': cuentas_bancarias })
+
+@app.route('/api/v1/consultas/3/<pais>', methods=['GET'])
+def consulta3(pais):
+	usuarios_pais = [ (pais.nombre,usuario.nombre,usuario.apellido) for usuario,pais in db.session.query(Usuario,Pais).join(Pais, Usuario.pais == Pais.cod_pais).filter(Pais.nombre == pais).all()]
+	return jsonify({'Usuarios que pertenecen al país': usuarios_pais })
+
+@app.route('/api/v1/consultas/4/<nombre>', methods=['GET'])
+def consulta4(nombre):
+	maximo_valor = [ (moneda.nombre,precio_moneda.valor) for moneda,precio_moneda in db.session.query(Moneda,Precio_Moneda).join(Precio_Moneda, Moneda.id == Precio_Moneda.id_moneda).filter(Moneda.nombre == nombre).order_by(Precio_Moneda.valor.desc()).limit(1).all()]
+	return jsonify({'Máximo valor histórico': maximo_valor })
+
+@app.route('/api/v1/consultas/5/<sigla>', methods=['GET']) #Me falta sumar :3c
+def consulta5(sigla):
+	cantidad_monedas = [ (moneda.sigla,db.func.sum(usuario_tiene_moneda.balance)) for moneda,usuario_tiene_moneda in db.session.query(Moneda,Usuario_Tiene_Moneda).join(Usuario_Tiene_Moneda, Moneda.id == Usuario_Tiene_Moneda.id_moneda).filter(Moneda.sigla == sigla).all()]
+	#db.session.query(Moneda.sigla,func.sum(Usuario_Tiene_Moneda.balance)).join(Usuario_Tiene_Moneda, Moneda.id == Usuario_Tiene_Moneda.id_moneda).filter(Moneda.sigla == sigla).group_by(Moneda.sigla).all()
+	return jsonify({'Cantidad de monedas': cantidad_monedas })
 
 if __name__ == '__main__':
 	app.run(debug=True)
